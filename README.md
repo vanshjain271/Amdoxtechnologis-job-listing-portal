@@ -69,7 +69,7 @@ npm install
 npm run dev
 ```
 
-Backend runs on → **http://localhost:5000**
+Backend runs on → **http://localhost:5001**
 
 ---
 
