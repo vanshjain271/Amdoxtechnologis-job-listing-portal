@@ -9,8 +9,9 @@ import Dashboard from "./pages/Dashboard";
 import Jobs from "./pages/Jobs";
 import Applications from "./pages/Applications";
 import Profile from "./pages/Profile";
+import CreateProfile from "./pages/CreateProfile";
+import EditProfile from "./pages/EditProfile";
 
-// Public layout wrapper (with top Navbar)
 const PublicLayout = ({ children }) => (
   <div className="min-h-screen flex flex-col">
     <Navbar />
@@ -18,7 +19,6 @@ const PublicLayout = ({ children }) => (
   </div>
 );
 
-// Protected layout wrapper
 const ProtectedDashboard = ({ children }) => (
   <ProtectedRoute>{children}</ProtectedRoute>
 );
@@ -28,35 +28,25 @@ const App = () => {
     <BrowserRouter>
       <AuthProvider>
         <Routes>
-          {/* --- Public routes (with Navbar) --- */}
-          <Route
-            path="/login"
-            element={<PublicLayout><Login /></PublicLayout>}
-          />
-          <Route
-            path="/register"
-            element={<PublicLayout><Register /></PublicLayout>}
-          />
+          {/* Public routes */}
+          <Route path="/login"    element={<PublicLayout><Login /></PublicLayout>} />
+          <Route path="/register" element={<PublicLayout><Register /></PublicLayout>} />
 
-          {/* --- Protected dashboard routes (with Sidebar layout) --- */}
-          <Route
-            path="/dashboard"
-            element={
-              <ProtectedDashboard>
-                <DashboardLayout />
-              </ProtectedDashboard>
-            }
-          >
-            {/* Nested routes — rendered via <Outlet /> in DashboardLayout */}
-            <Route index          element={<Dashboard />} />
-            <Route path="jobs"         element={<Jobs />} />
+          {/* Standalone protected pages (no sidebar layout) */}
+          <Route path="/create-profile"
+            element={<ProtectedDashboard><CreateProfile /></ProtectedDashboard>} />
+
+          {/* Dashboard with sidebar */}
+          <Route path="/dashboard"
+            element={<ProtectedDashboard><DashboardLayout /></ProtectedDashboard>}>
+            <Route index              element={<Dashboard />} />
+            <Route path="jobs"        element={<Jobs />} />
             <Route path="applications" element={<Applications />} />
-            <Route path="profile"      element={<Profile />} />
-            {/* Settings placeholder — redirects to profile until built */}
-            <Route path="settings"     element={<Navigate to="/dashboard/profile" replace />} />
+            <Route path="profile"     element={<Profile />} />
+            <Route path="edit-profile" element={<EditProfile />} />
+            <Route path="settings"    element={<Navigate to="/dashboard/profile" replace />} />
           </Route>
 
-          {/* --- Redirects --- */}
           <Route path="/"  element={<Navigate to="/dashboard" replace />} />
           <Route path="*"  element={<Navigate to="/login" replace />} />
         </Routes>
