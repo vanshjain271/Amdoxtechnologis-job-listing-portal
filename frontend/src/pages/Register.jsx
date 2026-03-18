@@ -46,6 +46,7 @@ const Register = () => {
     confirmPassword: "",
     role: "jobseeker",
   });
+
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [errors, setErrors] = useState({});
@@ -81,39 +82,59 @@ const Register = () => {
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    const validationErrors = validate();
-    if (Object.keys(validationErrors).length > 0) {
-      setErrors(validationErrors);
-      return;
-    }
+  e.preventDefault(); // make sure this exists
 
-    setLoading(true);
-    setServerError("");
-    try {
-      const data = await registerUser(formData);
-      if (data.success) {
-        login(data.user, data.token);
-        navigate("/dashboard");
-      } else {
-        setServerError(data.message || "Registration failed.");
-      }
-    } catch (err) {
-      setServerError(
-        err.response?.data?.message || "Something went wrong. Please try again."
-      );
-    } finally {
-      setLoading(false);
+  const validationErrors = validate();
+  console.log("VALIDATION:", validationErrors);
+
+  if (Object.keys(validationErrors).length > 0) {
+    setErrors(validationErrors);
+    return;
+  }
+
+  setLoading(true);
+  setServerError("");
+
+  try {
+    console.log("CALLING API");
+
+    const payload = {
+      name: formData.fullName,
+      email: formData.email,
+      password: formData.password,
+      role: formData.role,
+    };
+
+    const data = await registerUser(payload);
+
+    console.log("API RESPONSE:", data);
+
+    if (data.success) {
+      login(data.user, data.token);
+      navigate("/dashboard");
+    } else {
+      setServerError(data.message || "Registration failed.");
     }
-  };
+  } catch (err) {
+    console.log("ERROR:", err);
+    setServerError(
+      err.response?.data?.message || "Something went wrong."
+    );
+  } finally {
+    setLoading(false);
+  }
+};
 
   const inputClass = (field) =>
-    `input-field ${errors[field] ? "border-red-500/60 focus:ring-red-500/30 focus:border-red-500/60" : ""}`;
+    `input-field ${
+      errors[field]
+        ? "border-red-500/60 focus:ring-red-500/30 focus:border-red-500/60"
+        : ""
+    }`;
 
   return (
     <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center px-4 py-16">
       <div className="w-full max-w-md animate-slide-up">
-        {/* Header */}
         <div className="text-center mb-8">
           <h1 className="font-display text-4xl font-bold text-white mb-2 tracking-tight">
             Create account
@@ -123,194 +144,68 @@ const Register = () => {
           </p>
         </div>
 
-        {/* Card */}
         <div className="card-surface p-8">
           <form onSubmit={handleSubmit} className="space-y-5" noValidate>
-            {/* Server Error */}
+
             {serverError && (
               <div className="flex items-center gap-2.5 bg-red-500/10 border border-red-500/30
-                              text-red-400 px-4 py-3 rounded-xl text-sm animate-fade-in">
-                <svg className="w-4 h-4 shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                </svg>
+                              text-red-400 px-4 py-3 rounded-xl text-sm">
                 {serverError}
               </div>
             )}
 
-            {/* Full Name */}
-            <div>
-              <label htmlFor="fullName" className="label">Full Name</label>
-              <input
-                id="fullName"
-                name="fullName"
-                type="text"
-                autoComplete="name"
-                placeholder="John Doe"
-                value={formData.fullName}
-                onChange={handleChange}
-                className={inputClass("fullName")}
-                disabled={loading}
-              />
-              {errors.fullName && (
-                <p className="mt-1.5 text-xs text-red-400">{errors.fullName}</p>
-              )}
-            </div>
+            <input
+              name="fullName"
+              placeholder="Full Name"
+              value={formData.fullName}
+              onChange={handleChange}
+              className={inputClass("fullName")}
+            />
 
-            {/* Email */}
-            <div>
-              <label htmlFor="email" className="label">Email Address</label>
-              <input
-                id="email"
-                name="email"
-                type="email"
-                autoComplete="email"
-                placeholder="you@example.com"
-                value={formData.email}
-                onChange={handleChange}
-                className={inputClass("email")}
-                disabled={loading}
-              />
-              {errors.email && (
-                <p className="mt-1.5 text-xs text-red-400">{errors.email}</p>
-              )}
-            </div>
+            <input
+              name="email"
+              placeholder="Email"
+              value={formData.email}
+              onChange={handleChange}
+              className={inputClass("email")}
+            />
 
-            {/* Role */}
-            <div>
-              <label htmlFor="role" className="label">I am a</label>
-              <select
-                id="role"
-                name="role"
-                value={formData.role}
-                onChange={handleChange}
-                className="input-field appearance-none cursor-pointer"
-                disabled={loading}
-              >
-                <option value="jobseeker">Job Seeker</option>
-                <option value="employer">Employer</option>
-              </select>
-            </div>
+            <select 
+              name="role" 
+              value={formData.role} 
+              onChange={handleChange}
+              className="input-field"
+            >
+              <option value="jobseeker">Job Seeker</option>
+              <option value="employer">Employer</option>
+            </select>
 
-            {/* Password */}
-            <div>
-              <label htmlFor="password" className="label">Password</label>
-              <div className="relative">
-                <input
-                  id="password"
-                  name="password"
-                  type={showPassword ? "text" : "password"}
-                  autoComplete="new-password"
-                  placeholder="Min. 6 characters"
-                  value={formData.password}
-                  onChange={handleChange}
-                  className={`${inputClass("password")} pr-11`}
-                  disabled={loading}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword((p) => !p)}
-                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-500
-                             hover:text-amber-400 transition-colors duration-200"
-                  tabIndex={-1}
-                >
-                  <EyeIcon open={showPassword} />
-                </button>
-              </div>
-              {errors.password ? (
-                <p className="mt-1.5 text-xs text-red-400">{errors.password}</p>
-              ) : formData.password ? (
-                <div className="mt-2 space-y-1">
-                  <div className="flex gap-1">
-                    {[1, 2, 3, 4, 5].map((i) => (
-                      <div
-                        key={i}
-                        className={`h-1 flex-1 rounded-full transition-all duration-300 ${
-                          i <= strength.score ? strength.color : "bg-slate-800"
-                        }`}
-                      />
-                    ))}
-                  </div>
-                  {strength.label && (
-                    <p className="text-xs text-slate-500">
-                      Password strength:{" "}
-                      <span className={`font-semibold ${
-                        strength.score <= 2 ? "text-orange-400" :
-                        strength.score <= 3 ? "text-yellow-400" : "text-green-400"
-                      }`}>
-                        {strength.label}
-                      </span>
-                    </p>
-                  )}
-                </div>
-              ) : null}
-            </div>
+            <input
+              type="password"
+              name="password"
+              placeholder="Password"
+              value={formData.password}
+              onChange={handleChange}
+              className={inputClass("password")}
+            />
 
-            {/* Confirm Password */}
-            <div>
-              <label htmlFor="confirmPassword" className="label">Confirm Password</label>
-              <div className="relative">
-                <input
-                  id="confirmPassword"
-                  name="confirmPassword"
-                  type={showConfirm ? "text" : "password"}
-                  autoComplete="new-password"
-                  placeholder="Repeat your password"
-                  value={formData.confirmPassword}
-                  onChange={handleChange}
-                  className={`${inputClass("confirmPassword")} pr-11`}
-                  disabled={loading}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowConfirm((p) => !p)}
-                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-500
-                             hover:text-amber-400 transition-colors duration-200"
-                  tabIndex={-1}
-                >
-                  <EyeIcon open={showConfirm} />
-                </button>
-              </div>
-              {errors.confirmPassword && (
-                <p className="mt-1.5 text-xs text-red-400">{errors.confirmPassword}</p>
-              )}
-              {!errors.confirmPassword &&
-                formData.confirmPassword &&
-                formData.password === formData.confirmPassword && (
-                  <p className="mt-1.5 text-xs text-green-400 flex items-center gap-1">
-                    <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                    </svg>
-                    Passwords match
-                  </p>
-                )}
-            </div>
+            <input
+              type="password"
+              name="confirmPassword"
+              placeholder="Confirm Password"
+              value={formData.confirmPassword}
+              onChange={handleChange}
+              className={inputClass("confirmPassword")}
+            />
 
-            {/* Submit */}
-            <div className="pt-1">
-              <button type="submit" className="btn-primary" disabled={loading}>
-                {loading ? (
-                  <span className="flex items-center justify-center gap-2">
-                    <span className="w-4 h-4 border-2 border-slate-700 border-t-slate-900
-                                     rounded-full animate-spin" />
-                    Creating account...
-                  </span>
-                ) : (
-                  "Create Account"
-                )}
-              </button>
-            </div>
+            <button type="submit" className="btn-primary" disabled={loading}>
+              {loading ? "Creating..." : "Create Account"}
+            </button>
           </form>
 
-          {/* Divider */}
-          <div className="flex items-center gap-4 my-6">
-            <div className="flex-1 h-px bg-slate-800" />
-            <span className="text-slate-600 text-xs font-mono">OR</span>
-            <div className="flex-1 h-px bg-slate-800" />
-          </div>
-
-          <p className="text-center text-slate-500 text-sm">
+          <p className="text-center text-slate-500 text-sm mt-4">
             Already have an account?{" "}
-            <Link to="/login" className="btn-ghost ml-1">
+            <Link to="/login" className="btn-ghost">
               Sign in
             </Link>
           </p>
