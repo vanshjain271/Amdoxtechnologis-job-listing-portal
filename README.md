@@ -1,30 +1,28 @@
-# 🏛️ JobVault — Job Portal Auth System
+# 🏛️ Amdoxtechnologis — JobVault Portal
 
-A production-ready MERN stack authentication system for a job portal, featuring JWT-based auth, role-based access control, and a modern dark-themed UI.
+A production-ready MERN stack job portal system, featuring JWT-based auth, role-based access control, job management, and an application tracking system with a modern dark-themed UI.
 
 ---
 
 ## 📁 Project Structure
 
 ```
-job-portal-auth-system/
+job-portal-system/
 ├── frontend/               # React + Vite + Tailwind CSS
 │   └── src/
-│       ├── components/     # Navbar, ProtectedRoute
-│       ├── pages/          # Login, Register, Dashboard
-│       ├── services/       # Axios API layer (authService.js)
+│       ├── components/     # Sidebar, ProtectedRoute, DashboardLayout
+│       ├── pages/          # Login, Register, Jobs, JobDetails, Applications, Profile
+│       ├── services/       # authService, jobService, applicationService
 │       ├── context/        # AuthContext (global auth state)
 │       └── hooks/          # useAuth custom hook
 │
 ├── backend/                # Node.js + Express + MongoDB
 │   ├── config/             # MongoDB connection
-│   ├── controllers/        # authController (register, login, profile)
+│   ├── controllers/        # auth, profile, job, application controllers
 │   ├── middleware/         # JWT auth middleware + role authorizer
-│   ├── models/             # User Mongoose schema
-│   ├── routes/             # Auth routes
-│   └── modules/
-│       ├── jobs/           # 🚧 Scaffolded for future use
-│       └── applications/   # 🚧 Scaffolded for future use
+│   ├── models/             # User, Job, Application, Profile schemas
+│   ├── routes/             # Auth, Profile, Job, Application routes
+│   └── uploads/            # Local storage for resumes (PDF/DOCX)
 │
 └── README.md
 ```
@@ -51,13 +49,10 @@ Edit `.env` with your values:
 
 ```env
 MONGO_URI=mongodb://localhost:27017/job-portal
-JWT_SECRET=your_super_secret_jwt_key_change_in_production
-PORT=5000
+JWT_SECRET=your_super_secret_jwt_key
+PORT=5001
 NODE_ENV=development
 ```
-
-> **Atlas example:**
-> `MONGO_URI=mongodb+srv://<user>:<pass>@cluster0.xxxxx.mongodb.net/job-portal`
 
 ---
 
@@ -87,59 +82,42 @@ Frontend runs on → **http://localhost:5173**
 
 ## 🔌 API Reference
 
+### Auth & Profile
 | Method | Endpoint              | Access    | Description          |
 |--------|-----------------------|-----------|----------------------|
 | POST   | `/api/auth/register`  | Public    | Register new user    |
 | POST   | `/api/auth/login`     | Public    | Login & get JWT      |
-| GET    | `/api/auth/profile`   | Protected | Get current user     |
-| GET    | `/api/health`         | Public    | Health check         |
+| GET    | `/api/profile/me`     | Protected | Get current profile  |
 
----
+### Jobs
+| Method | Endpoint              | Access    | Description               |
+|--------|-----------------------|-----------|---------------------------|
+| GET    | `/api/jobs`           | Public    | Get all jobs (with query) |
+| GET    | `/api/jobs/:id`       | Public    | Get single job details    |
+| POST   | `/api/jobs`           | Employer  | Create a new job listing  |
+| PUT    | `/api/jobs/:id`       | Employer  | Update job listing        |
+| DELETE | `/api/jobs/:id`       | Employer  | Delete job listing        |
+| GET    | `/api/jobs/my/all`    | Employer  | Get employer's listings   |
 
-## 🔐 Authentication Flow
-
-1. User registers → password hashed with **bcrypt** (12 salt rounds)
-2. User logs in → **JWT** token generated (7d expiry)
-3. Token stored in `localStorage` on frontend
-4. Protected routes: token sent as `Authorization: Bearer <token>`
-5. Middleware verifies token and attaches user to request
-
----
-
-## 👥 User Roles
-
-| Role         | Access                             |
-|--------------|------------------------------------|
-| `jobseeker`  | Browse jobs, submit applications   |
-| `employer`   | Post jobs, manage applications     |
-
-Role is stored in MongoDB and embedded in the JWT payload.
+### Applications
+| Method | Endpoint                    | Access    | Description                |
+|--------|-----------------------------|-----------|----------------------------|
+| POST   | `/api/applications/:jobId`  | Seeker    | Apply to a job             |
+| GET    | `/api/applications/my/all`  | Seeker    | Get my applications        |
+| GET    | `/api/applications/job/:id` | Employer  | Get applications for a job |
+| PATCH  | `/api/applications/:id/status`| Employer| Update application status  |
 
 ---
 
 ## ✅ Features Implemented
 
-- [x] User Registration (name, email, password, role)
-- [x] Email uniqueness validation
-- [x] bcrypt password hashing
-- [x] Password strength indicator
-- [x] User Login with JWT
-- [x] JWT authentication middleware
-- [x] Protected routes (frontend + backend)
-- [x] Role-based authorization middleware
-- [x] Responsive modern dark UI with Tailwind
-- [x] Password visibility toggle
-- [x] Form validation (client + server)
-- [x] Token auto-restoration on page reload
-- [x] Axios interceptors for token injection
-- [x] Global error handling middleware
-
----
-
-## 🏗️ Future Modules (Scaffolded)
-
-- `backend/modules/jobs/` — Job posting CRUD
-- `backend/modules/applications/` — Application management
+- [x] **JWT Authentication**: Secure login/registration with role-based tokens.
+- [x] **Secure Profiles**: Separate profiles for Job Seekers (resumes, skills) and Employers (company details).
+- [x] **Job Market**: Advanced search with keyword and location filters.
+- [x] **Recruitment Portal**: Employers can post, edit, and delete job listings.
+- [x] **Application Tracking**: Seekers can track status; Employers can shortlist or reject candidates.
+- [x] **Resume Management**: Secure local storage and retrieval of PDF/DOCX resumes.
+- [x] **Modern UI**: Fully responsive, dark-themed interface built with Tailwind CSS.
 
 ---
 
@@ -153,4 +131,5 @@ Role is stored in MongoDB and embedded in the JWT payload.
 | Backend   | Node.js, Express.js             |
 | Database  | MongoDB, Mongoose               |
 | Auth      | JWT, bcryptjs                   |
+| Storage   | Multer (Local File System)      |
 | Dev       | nodemon                         |
