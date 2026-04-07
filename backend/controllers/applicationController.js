@@ -1,6 +1,7 @@
 const Application = require("../models/Application");
 const Job = require("../models/Job");
 const JobSeekerProfile = require("../models/JobSeekerProfile");
+const Notification = require("../models/Notification");
 
 // @desc    Apply to a job
 // @route   POST /api/applications/:jobId
@@ -152,7 +153,9 @@ const getMyApplications = async (req, res) => {
 const updateApplicationStatus = async (req, res) => {
   try {
     const { status } = req.body;
-    const application = await Application.findById(req.params.id).populate("jobId");
+    const application = await Application.findById(req.params.id)
+      .populate("jobId")
+      .populate("applicantId");
 
     if (!application) {
       return res.status(404).json({
@@ -171,6 +174,23 @@ const updateApplicationStatus = async (req, res) => {
 
     application.status = status;
     await application.save();
+
+    // ── Create Notification ──
+    const applicantUserId = application.applicantId.userId;
+    const notification = await Notification.create({
+      userId: applicantUserId,
+      type: "application_update",
+      title: "Application Status Updated",
+      message: `Your application for "${application.jobId.title}" has been ${status}.`,
+      link: "/dashboard/applications",
+      data: { applicationId: application._id, status },
+    });
+
+    // ── Emit Socket Event ──
+    const io = req.app.get("io");
+    if (io) {
+      io.to(applicantUserId.toString()).emit("notification", notification);
+    }
 
     res.status(200).json({
       success: true,
