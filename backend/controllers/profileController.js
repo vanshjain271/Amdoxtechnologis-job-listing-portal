@@ -330,9 +330,17 @@ const updateEmployerProfile = async (req, res) => {
  * 3. This controller then reads `req.file.filename`, constructs a URL,
  *    saves it on the JobSeekerProfile, and returns it to the frontend.
  */
+const { parseResume } = require("../modules/parserService");
+
+// ... existing imports ...
+
+/**
+ * @desc    Upload a resume file (PDF/DOC/DOCX) for a job seeker
+ * @route   POST /api/profile/upload-resume
+ * @access  Private
+ */
 const uploadResume = async (req, res) => {
   try {
-    // req.file is populated by multer's upload.single() middleware
     if (!req.file) {
       return res.status(400).json({
         success: false,
@@ -340,25 +348,20 @@ const uploadResume = async (req, res) => {
       });
     }
 
-    // Build a URL the frontend can use to reference the file
     const resumeURL = `/uploads/${req.file.filename}`;
 
-    // Delete the old resume file from disk if one exists
+    // 1. Run Simulated AI Parsing
+    const parsedData = await parseResume(req.file.filename);
+
     const existingProfile = await JobSeekerProfile.findOne({
       userId: req.user._id,
     });
+    
     if (existingProfile?.resumeURL) {
-      const oldFilePath = path.join(
-        __dirname,
-        "..",
-        existingProfile.resumeURL
-      );
-      if (fs.existsSync(oldFilePath)) {
-        fs.unlinkSync(oldFilePath);
-      }
+      const oldFilePath = path.join(__dirname, "..", existingProfile.resumeURL);
+      if (fs.existsSync(oldFilePath)) fs.unlinkSync(oldFilePath);
     }
 
-    // Update or create the profile with the new resume URL
     const profile = await JobSeekerProfile.findOneAndUpdate(
       { userId: req.user._id },
       { $set: { resumeURL } },
@@ -366,28 +369,22 @@ const uploadResume = async (req, res) => {
     );
 
     if (!profile) {
-      // Clean up the uploaded file since there's no profile to attach it to
       fs.unlinkSync(req.file.path);
       return res.status(404).json({
         success: false,
-        message:
-          "Job seeker profile not found. Please create your profile first before uploading a resume.",
+        message: "Job seeker profile not found. Please create your profile first.",
       });
     }
 
     res.status(200).json({
       success: true,
-      message: "Resume uploaded successfully.",
+      message: "Resume uploaded and 'AI parsed' successfully!",
       resumeURL,
+      parsedData, // This is returned so frontend can pre-fill the form
       filename: req.file.filename,
-      originalname: req.file.originalname,
-      size: req.file.size,
     });
   } catch (error) {
-    // Clean up the file if something went wrong after upload
-    if (req.file?.path && fs.existsSync(req.file.path)) {
-      fs.unlinkSync(req.file.path);
-    }
+    if (req.file?.path && fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
     console.error("uploadResume Error:", error);
     res.status(500).json({ success: false, message: "Server error." });
   }

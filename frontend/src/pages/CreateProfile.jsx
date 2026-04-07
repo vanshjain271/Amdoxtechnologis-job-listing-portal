@@ -1,43 +1,6 @@
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import useAuth from "../hooks/useAuth";
-import {
-  createJobSeekerProfile,
-  createEmployerProfile,
-  uploadResume,
-} from "../services/profileService";
+import { Zap, Sparkles, FileText, UploadCloud } from "lucide-react";
 
-// ─────────────────────────────────────────────
-// REUSABLE FIELD COMPONENTS
-// ─────────────────────────────────────────────
-
-const FormField = ({ label, id, error, required, children }) => (
-  <div className="flex flex-col gap-1.5">
-    <label htmlFor={id} className="text-xs font-bold uppercase tracking-widest text-slate-500">
-      {label} {required && <span className="text-amber-400">*</span>}
-    </label>
-    {children}
-    {error && <p className="text-xs text-red-400 mt-0.5">{error}</p>}
-  </div>
-);
-
-const inputCls = (err) =>
-  `w-full bg-slate-800/60 border ${
-    err ? "border-red-500/60" : "border-slate-700"
-  } text-slate-100 placeholder-slate-500 rounded-xl px-4 py-3 text-sm
-  focus:outline-none focus:ring-2 focus:ring-amber-400/40 focus:border-amber-400/50
-  transition-all duration-200`;
-
-const textareaCls = (err) =>
-  `w-full bg-slate-800/60 border ${
-    err ? "border-red-500/60" : "border-slate-700"
-  } text-slate-100 placeholder-slate-500 rounded-xl px-4 py-3 text-sm resize-none
-  focus:outline-none focus:ring-2 focus:ring-amber-400/40 focus:border-amber-400/50
-  transition-all duration-200`;
-
-// ─────────────────────────────────────────────
-// JOB SEEKER FORM
-// ─────────────────────────────────────────────
+// ... existing components ...
 
 const JobSeekerForm = ({ onSubmit, loading, serverError }) => {
   const [form, setForm] = useState({
@@ -54,11 +17,45 @@ const JobSeekerForm = ({ onSubmit, loading, serverError }) => {
   const [resumeFile, setResumeFile] = useState(null);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [errors, setErrors] = useState({});
+  const [onAutoFill, setOnAutoFill] = useState(false);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setForm((p) => ({ ...p, [name]: value }));
     if (errors[name]) setErrors((p) => ({ ...p, [name]: "" }));
+  };
+
+  const handleResumeChange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setResumeFile(file);
+
+    // AI Parsing trigger
+    setOnAutoFill(true);
+    try {
+      const data = await uploadResume(file, (pe) => {
+        setUploadProgress(Math.round((pe.loaded * 100) / pe.total));
+      });
+      if (data.success && data.parsedData) {
+        const pd = data.parsedData;
+        setForm(prev => ({
+          ...prev,
+          fullName: pd.fullName || prev.fullName,
+          phone: pd.phone || prev.phone,
+          location: pd.location || prev.location,
+          skills: Array.isArray(pd.skills) ? pd.skills.join(", ") : pd.skills || prev.skills,
+          experience: pd.experience || prev.experience,
+          education: pd.education || prev.education,
+          linkedin: pd.linkedin || prev.linkedin,
+          github: pd.github || prev.github,
+        }));
+        setUploadProgress(100);
+      }
+    } catch (err) {
+      console.error("Auto-fill error:", err);
+    } finally {
+      setTimeout(() => setOnAutoFill(false), 2000);
+    }
   };
 
   const validate = () => {
@@ -71,11 +68,58 @@ const JobSeekerForm = ({ onSubmit, loading, serverError }) => {
     e.preventDefault();
     const errs = validate();
     if (Object.keys(errs).length) { setErrors(errs); return; }
-    await onSubmit(form, resumeFile, setUploadProgress);
+    // Pass null as resumeFile since we already uploaded it above
+    await onSubmit(form, null, setUploadProgress);
   };
 
   return (
-    <form onSubmit={handleSubmit} noValidate className="space-y-5">
+    <form onSubmit={handleSubmit} noValidate className="space-y-6">
+      {onAutoFill && (
+        <div className="bg-amber-400/10 border border-amber-400/30 text-amber-400 px-4 py-3 rounded-xl text-sm flex items-center gap-3 animate-in slide-in-from-top-2 duration-300">
+          <Sparkles size={16} className="animate-spin-slow" />
+          <span className="font-medium font-display">AI is analyzing your resume to pre-fill your profile...</span>
+        </div>
+      )}
+
+      {/* Smart Resume Upload First */}
+      <div className="mb-6">
+        <FormField label="Smart Resume Upload" id="resume">
+          <div className={`${inputCls()} flex flex-col items-center justify-center gap-4 py-8 border-dashed border-2 hover:border-amber-400/50 group transition-all relative overflow-hidden bg-slate-900/40`}>
+            <div className="w-16 h-16 rounded-3xl bg-amber-400/10 flex items-center justify-center text-amber-400 group-hover:scale-110 transition-transform duration-500 shadow-xl shadow-amber-400/5">
+              <UploadCloud size={32} />
+            </div>
+            <div className="text-center group-hover:translate-y-[-2px] transition-transform duration-500">
+              <p className="text-sm font-bold text-slate-200">
+                {resumeFile ? resumeFile.name : "Drop resume here or click to upload"}
+              </p>
+              <p className="text-[10px] text-slate-500 uppercase tracking-[0.2em] font-bold mt-1">Get profile data extracted with AI</p>
+            </div>
+            <input id="resume" type="file" accept=".pdf,.doc,.docx"
+              className="absolute inset-0 opacity-0 cursor-pointer"
+              onChange={handleResumeChange}
+              disabled={loading} />
+          </div>
+          {uploadProgress > 0 && (
+            <div className="mt-4 animate-in fade-in duration-500">
+              <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                <div className="h-full bg-amber-400 transition-all duration-300"
+                  style={{ width: `${uploadProgress}%` }} />
+              </div>
+              <div className="flex justify-between items-center mt-2">
+                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest flex items-center gap-2">
+                  {uploadProgress === 100 ? (
+                    <span className="text-emerald-400 flex items-center gap-1"><Zap size={10} /> AI Extraction Complete</span>
+                  ) : "Uploading & Processing..."}
+                </p>
+                <p className="text-[10px] text-amber-400 font-bold">{uploadProgress}%</p>
+              </div>
+            </div>
+          )}
+        </FormField>
+      </div>
+
+      <div className="h-px bg-slate-800/50 w-full mb-6" />
+
       {serverError && (
         <div className="flex items-center gap-2.5 bg-red-500/10 border border-red-500/30 text-red-400 px-4 py-3 rounded-xl text-sm">
           <svg className="w-4 h-4 shrink-0" fill="currentColor" viewBox="0 0 20 20">

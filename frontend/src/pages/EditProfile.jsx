@@ -54,31 +54,57 @@ const EditJobSeekerForm = ({ profile, onSubmit, loading, serverError }) => {
     github: profile?.github || "",
     portfolio: profile?.portfolio || "",
   });
-  const [resumeFile, setResumeFile] = useState(null);
-  const [uploadProgress, setUploadProgress] = useState(0);
-  const [errors, setErrors] = useState({});
+  const [onAutoFill, setOnAutoFill] = useState(false);
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setForm((p) => ({ ...p, [name]: value }));
-    if (errors[name]) setErrors((p) => ({ ...p, [name]: "" }));
-  };
+  const handleResumeChange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setResumeFile(file);
 
-  const validate = () => {
-    const e = {};
-    if (!form.fullName.trim()) e.fullName = "Full name is required.";
-    return e;
+    // AI Parsing trigger
+    setOnAutoFill(true);
+    try {
+      const data = await uploadResume(file, (pe) => {
+        setUploadProgress(Math.round((pe.loaded * 100) / pe.total));
+      });
+      if (data.success && data.parsedData) {
+        const pd = data.parsedData;
+        setForm(prev => ({
+          ...prev,
+          fullName: pd.fullName || prev.fullName,
+          phone: pd.phone || prev.phone,
+          location: pd.location || prev.location,
+          skills: Array.isArray(pd.skills) ? pd.skills.join(", ") : pd.skills || prev.skills,
+          experience: pd.experience || prev.experience,
+          education: pd.education || prev.education,
+          linkedin: pd.linkedin || prev.linkedin,
+          github: pd.github || prev.github,
+        }));
+        setUploadProgress(100);
+      }
+    } catch (err) {
+      console.error("Auto-fill error:", err);
+    } finally {
+      setTimeout(() => setOnAutoFill(false), 2000);
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     const errs = validate();
     if (Object.keys(errs).length) { setErrors(errs); return; }
-    await onSubmit(form, resumeFile, setUploadProgress);
+    // Pass null as resumeFile since we already uploaded it above
+    await onSubmit(form, null, setUploadProgress);
   };
 
   return (
     <form onSubmit={handleSubmit} noValidate className="space-y-5">
+      {onAutoFill && (
+        <div className="bg-amber-400/10 border border-amber-400/30 text-amber-400 px-4 py-3 rounded-xl text-sm flex items-center gap-3 animate-pulse">
+          <Sparkles size={16} />
+          <span>AI is parsing your resume and pre-filling the form...</span>
+        </div>
+      )}
       {serverError && (
         <div className="flex items-center gap-2.5 bg-red-500/10 border border-red-500/30 text-red-400 px-4 py-3 rounded-xl text-sm">
           <svg className="w-4 h-4 shrink-0" fill="currentColor" viewBox="0 0 20 20">
@@ -129,33 +155,41 @@ const EditJobSeekerForm = ({ profile, onSubmit, loading, serverError }) => {
           className={textareaCls()} disabled={loading} />
       </FormField>
 
-      {/* Resume Upload */}
+      {/* Resume Upload - NOW WITH AUTO FILL */}
       <FormField
-        label="Replace Resume"
+        label="Smart Resume Upload"
         id="resume"
-        hint={profile?.resumeURL ? `Current: ${profile.resumeURL.split("/").pop()}` : "No resume uploaded yet"}
+        hint="Upload to automatically pre-fill your profile using AI"
       >
-        <div className={`${inputCls()} flex items-center gap-3 cursor-pointer relative`}>
-          <label htmlFor="resume" className="cursor-pointer flex items-center gap-3 w-full">
-            <span className="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 rounded-lg text-xs font-semibold text-slate-300 transition-colors shrink-0">
-              Choose File
-            </span>
-            <span className="text-slate-500 text-xs truncate">
-              {resumeFile ? resumeFile.name : "PDF, DOC, or DOCX — max 5 MB"}
-            </span>
+        <div className={`${inputCls()} flex items-center gap-3 cursor-pointer relative group border-dashed border-2 hover:border-amber-400/50 transition-all`}>
+          <label htmlFor="resume" className="cursor-pointer flex items-center justify-center gap-3 w-full py-2">
+            <div className="w-10 h-10 rounded-full bg-amber-400/10 flex items-center justify-center text-amber-400 group-hover:scale-110 transition-transform">
+              <Zap size={20} />
+            </div>
+            <div className="text-left">
+              <p className="text-sm font-bold text-slate-200">
+                {resumeFile ? resumeFile.name : "Select Resume"}
+              </p>
+              <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">PDF, DOC (MAX 5MB)</p>
+            </div>
           </label>
           <input id="resume" type="file" accept=".pdf,.doc,.docx"
             className="absolute inset-0 opacity-0 cursor-pointer"
-            onChange={(e) => setResumeFile(e.target.files[0] || null)}
+            onChange={handleResumeChange}
             disabled={loading} />
         </div>
-        {uploadProgress > 0 && uploadProgress < 100 && (
-          <div className="mt-2">
+        {uploadProgress > 0 && (
+          <div className="mt-3">
             <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden">
               <div className="h-full bg-amber-400 transition-all duration-300"
                 style={{ width: `${uploadProgress}%` }} />
             </div>
-            <p className="text-xs text-slate-500 mt-1">Uploading... {uploadProgress}%</p>
+            <div className="flex justify-between items-center mt-1">
+              <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">
+                {uploadProgress === 100 ? "Ready to save" : "Uploading & Parsing..."}
+              </p>
+              <p className="text-[10px] text-amber-400 font-bold">{uploadProgress}%</p>
+            </div>
           </div>
         )}
       </FormField>
