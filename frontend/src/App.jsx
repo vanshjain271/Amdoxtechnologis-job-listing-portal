@@ -11,6 +11,9 @@ import Applications from "./pages/Applications";
 import Profile from "./pages/Profile";
 import CreateProfile from "./pages/CreateProfile";
 import EditProfile from "./pages/EditProfile";
+import CreateJob from "./pages/CreateJob"; // ← Added
+import EditJob from "./pages/EditJob";     // ← Added
+import JobDetails from "./pages/JobDetails"; // ← Added
 
 const PublicLayout = ({ children }) => (
   <div className="min-h-screen flex flex-col">
@@ -41,6 +44,9 @@ const App = () => {
             element={<ProtectedDashboard><DashboardLayout /></ProtectedDashboard>}>
             <Route index              element={<Dashboard />} />
             <Route path="jobs"        element={<Jobs />} />
+            <Route path="jobs/create" element={<CreateJob />} />
+            <Route path="jobs/edit/:id" element={<EditJob />} />
+            <Route path="jobs/:id"    element={<JobDetails />} />
             <Route path="applications" element={<Applications />} />
             <Route path="profile"     element={<Profile />} />
             <Route path="edit-profile" element={<EditProfile />} />
