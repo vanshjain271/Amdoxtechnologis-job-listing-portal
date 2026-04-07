@@ -2,12 +2,39 @@ const express = require("express");
 const cors = require("cors");
 const dotenv = require("dotenv");
 const path = require("path");
+const http = require("http");
+const { Server } = require("socket.io");
 const connectDB = require("./config/db");
 
 dotenv.config();
 connectDB();
 
 const app = express();
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: {
+    origin: ["http://localhost:5173", "http://localhost:5174", "http://localhost:5175"],
+    methods: ["GET", "POST"],
+    credentials: true,
+  },
+});
+
+// ── Socket.io Setup ──
+io.on("connection", (socket) => {
+  console.log("A user connected:", socket.id);
+
+  socket.on("join", (userId) => {
+    socket.join(userId);
+    console.log(`User ${userId} joined their room`);
+  });
+
+  socket.on("disconnect", () => {
+    console.log("User disconnected");
+  });
+});
+
+// Make io accessible in routes
+app.set("io", io);
 
 // ── Middleware ──
 app.use(
@@ -23,15 +50,19 @@ app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 // ── Routes ──
 app.use("/api/auth", require("./routes/authRoutes"));
-app.use("/api/profile", require("./routes/profileRoutes")); // ← Task 2
-app.use("/api/jobs", require("./routes/jobRoutes")); // ← Task 3
-app.use("/api/applications", require("./routes/applicationRoutes")); // ← Task 4
+app.use("/api/profile", require("./routes/profileRoutes"));
+app.use("/api/jobs", require("./routes/jobRoutes"));
+app.use("/api/applications", require("./routes/applicationRoutes"));
+app.use("/api/notifications", require("./routes/notificationRoutes"));
+app.use("/api/chat", require("./routes/chatRoutes"));
+app.use("/api/analytics", require("./routes/analyticsRoutes"));
+app.use("/api/admin", require("./routes/adminRoutes"));
 
 // ── Health check ──
 app.get("/api/health", (req, res) => {
   res.status(200).json({
     success: true,
-    message: "Job Portal API is running 🚀",
+    message: "Job Portal API is running with WebSockets 🚀",
     timestamp: new Date().toISOString(),
   });
 });
@@ -43,7 +74,6 @@ app.use((req, res) => {
 
 // ── Global error handler ──
 app.use((err, req, res, next) => {
-  // Handle multer-specific errors (file type, size)
   if (err.code === "LIMIT_FILE_SIZE") {
     return res.status(400).json({ success: false, message: "File too large. Maximum size is 5MB." });
   }
@@ -58,6 +88,6 @@ app.use((err, req, res, next) => {
 });
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
+server.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
 });
