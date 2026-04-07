@@ -27,8 +27,8 @@ const userSchema = new mongoose.Schema(
     role: {
       type: String,
       enum: {
-        values: ["jobseeker", "employer"],
-        message: "Role must be either jobseeker or employer",
+        values: ["jobseeker", "employer", "admin"],
+        message: "Role must be either jobseeker, employer, or admin",
       },
       default: "jobseeker",
     },
