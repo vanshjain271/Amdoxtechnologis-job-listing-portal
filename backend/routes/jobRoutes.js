@@ -8,7 +8,12 @@ const {
   deleteJob,
   getMyJobs,
 } = require("../controllers/jobController");
-const { protect } = require("../middleware/authMiddleware");
+const { getRecommendedJobs } = require("../controllers/matchController");
+const { protect, authorize } = require("../middleware/authMiddleware");
+
+// @route   GET /api/jobs/recommended
+// @access  Private (Job Seeker only)
+router.get("/recommended", protect, authorize("jobseeker"), getRecommendedJobs);
 
 // Public routes
 router.get("/", getJobs);
