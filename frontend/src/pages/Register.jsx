@@ -99,9 +99,10 @@ const Register = () => {
     console.log("CALLING API");
 
     const payload = {
-      name: formData.fullName,
+      fullName: formData.fullName,
       email: formData.email,
       password: formData.password,
+      confirmPassword: formData.confirmPassword,
       role: formData.role,
     };
 
