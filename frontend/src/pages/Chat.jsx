@@ -23,7 +23,7 @@ const Chat = () => {
 
   const fetchConversations = async () => {
     try {
-      const res = await axios.get("http://localhost:5000/api/chat/conversations", {
+      const res = await axios.get("http://localhost:5001/api/chat/conversations", {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.data.success) {
@@ -42,7 +42,7 @@ const Chat = () => {
 
   const fetchMessages = async (id) => {
     try {
-      const res = await axios.get(`http://localhost:5000/api/chat/messages/${id}`, {
+      const res = await axios.get(`http://localhost:5001/api/chat/messages/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.data.success) {
@@ -90,7 +90,7 @@ const Chat = () => {
 
     try {
       const res = await axios.post(
-        "http://localhost:5000/api/chat/messages",
+        "http://localhost:5001/api/chat/messages",
         {
           receiverId: receiver._id,
           text: newMessage,

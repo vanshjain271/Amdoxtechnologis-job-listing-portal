@@ -31,10 +31,10 @@ const Dashboard = () => {
     try {
       const rolePath = isEmployer ? "employer" : "seeker";
       const [analyticsRes, recoRes] = await Promise.all([
-        axios.get(`http://localhost:5000/api/analytics/${rolePath}`, {
+        axios.get(`http://localhost:5001/api/analytics/${rolePath}`, {
           headers: { Authorization: `Bearer ${token}` },
         }),
-        !isEmployer ? axios.get("http://localhost:5000/api/jobs/recommended", {
+        !isEmployer ? axios.get("http://localhost:5001/api/jobs/recommended", {
           headers: { Authorization: `Bearer ${token}` },
         }) : Promise.resolve({ data: { jobs: [] } })
       ]);

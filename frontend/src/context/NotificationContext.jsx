@@ -15,7 +15,7 @@ export const NotificationProvider = ({ children }) => {
   const fetchNotifications = useCallback(async () => {
     if (!token) return;
     try {
-      const res = await axios.get("http://localhost:5000/api/notifications", {
+      const res = await axios.get("http://localhost:5001/api/notifications", {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.data.success) {
@@ -32,7 +32,7 @@ export const NotificationProvider = ({ children }) => {
       fetchNotifications();
 
       // Initialize Socket.io
-      const newSocket = io("http://localhost:5000", {
+      const newSocket = io("http://localhost:5001", {
         auth: { token },
       });
 
@@ -59,7 +59,7 @@ export const NotificationProvider = ({ children }) => {
 
   const markAsRead = async (id) => {
     try {
-      await axios.patch(`http://localhost:5000/api/notifications/${id}/read`, {}, {
+      await axios.patch(`http://localhost:5001/api/notifications/${id}/read`, {}, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setNotifications((prev) =>
@@ -73,7 +73,7 @@ export const NotificationProvider = ({ children }) => {
 
   const markAllRead = async () => {
     try {
-      await axios.patch("http://localhost:5000/api/notifications/read-all", {}, {
+      await axios.patch("http://localhost:5001/api/notifications/read-all", {}, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));

@@ -18,10 +18,10 @@ const AdminDashboard = () => {
   const fetchData = async () => {
     try {
       const [usersRes, jobsRes] = await Promise.all([
-        axios.get("http://localhost:5000/api/admin/users", {
+        axios.get("http://localhost:5001/api/admin/users", {
           headers: { Authorization: `Bearer ${token}` },
         }),
-        axios.get("http://localhost:5000/api/admin/jobs", {
+        axios.get("http://localhost:5001/api/admin/jobs", {
           headers: { Authorization: `Bearer ${token}` },
         })
       ]);
@@ -41,7 +41,7 @@ const AdminDashboard = () => {
   const handleDeleteUser = async (userId) => {
     if (!window.confirm("Are you sure you want to delete this user? This action is permanent.")) return;
     try {
-      await axios.delete(`http://localhost:5000/api/admin/users/${userId}`, {
+      await axios.delete(`http://localhost:5001/api/admin/users/${userId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setUsers(users.filter((u) => u._id !== userId));
@@ -54,7 +54,7 @@ const AdminDashboard = () => {
     const newStatus = currentStatus === "active" ? "closed" : "active";
     try {
       await axios.patch(
-        `http://localhost:5000/api/admin/jobs/${jobId}/status`,
+        `http://localhost:5001/api/admin/jobs/${jobId}/status`,
         { status: newStatus },
         { headers: { Authorization: `Bearer ${token}` } }
       );
