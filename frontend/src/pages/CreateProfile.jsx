@@ -1,6 +1,32 @@
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Zap, Sparkles, FileText, UploadCloud } from "lucide-react";
+import useAuth from "../hooks/useAuth";
+import { createJobSeekerProfile, createEmployerProfile, uploadResume } from "../services/profileService";
 
-// ... existing components ...
+const FormField = ({ label, id, error, required, hint, children }) => (
+  <div className="flex flex-col gap-1.5 font-display">
+    <label htmlFor={id} className="text-xs font-bold uppercase tracking-[0.2em] text-slate-500">
+      {label} {required && <span className="text-amber-400">*</span>}
+    </label>
+    {children}
+    {hint && !error && <p className="text-[10px] text-slate-600 font-medium">{hint}</p>}
+    {error && <p className="text-[10px] text-red-400 mt-1 font-bold tracking-tight uppercase">{error}</p>}
+  </div>
+);
+
+const inputCls = (err) =>
+  `w-full bg-slate-900 border ${
+    err ? "border-red-500/60" : "border-slate-800"
+  } text-slate-100 placeholder-slate-600 rounded-xl px-4 py-3.5 text-sm
+  focus:outline-none focus:ring-2 focus:ring-amber-400/20 focus:border-amber-400/50
+  transition-all duration-300 shadow-inner`;
+
+const textareaCls = () =>
+  `w-full bg-slate-900 border border-slate-800 text-slate-100 placeholder-slate-600
+  rounded-xl px-4 py-3.5 text-sm resize-none
+  focus:outline-none focus:ring-2 focus:ring-amber-400/20 focus:border-amber-400/50
+  transition-all duration-300 shadow-inner`;
 
 const JobSeekerForm = ({ onSubmit, loading, serverError }) => {
   const [form, setForm] = useState({
